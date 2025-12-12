@@ -7,7 +7,7 @@ This plugin automatically detects if you are in a Godot project. If detected, it
 ## ✨ Features
 
 - **Auto-detection**: Only activates when a `project.godot` file is found.
-- **Seamless Integration**: Injects "Godot: Launch Game" directly into `dap.configurations.cs`.
+- **Seamless Integration**: Injects "Godot: Launch Main Scene" & "Godot: Select Scene to Launch" directly into `dap.configurations.cs`.
 - **Build Support**: Integrates with [overseer.nvim](https://github.com/stevearc/overseer.nvim) to automatically run `dotnet build` before debugging (reports errors in Quickfix).
 - **Environment Aware**: Respects your `GODOT` environment variable or looks for `godot` in your PATH.
 

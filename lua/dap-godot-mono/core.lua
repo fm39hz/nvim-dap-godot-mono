@@ -25,12 +25,24 @@ local function find_godot_project()
   return nil
 end
 
+local function find_scenes(project_dir)
+  local scenes = vim.fn.globpath(project_dir, "**/*.tscn", true, true)
+  local filtered_scenes = {}
+
+  for _, scene in ipairs(scenes) do
+    if not string.match(scene, "/addons/") and not string.match(scene, "/%.godot/") then
+      local relative_path = vim.fn.fnamemodify(scene, ":.")
+      table.insert(filtered_scenes, relative_path)
+    end
+  end
+  return filtered_scenes
+end
+
 local function setup_overseer_task()
   local has_overseer, overseer = pcall(require, "overseer")
   if not has_overseer then
     return
   end
-
   overseer.register_template({
     name = "Godot Build",
     builder = function()
@@ -56,7 +68,7 @@ function M.configure(opts)
 
   local netcoredbg_path = opts.netcoredbg_path or vim.fn.exepath("netcoredbg")
   if netcoredbg_path == "" then
-    vim.notify("dap-godot-mono: 'netcoredbg' not found in PATH.", vim.log.levels.WARN)
+    vim.notify("dap-godot-mono: 'netcoredbg' not found.", vim.log.levels.WARN)
     return
   end
 
@@ -70,25 +82,55 @@ function M.configure(opts)
     local godot_exe = adapter_conf.program and adapter_conf.program ~= "" and adapter_conf.program
         or opts.godot_executable
 
-    local args = { "--interpreter=vscode", "--", godot_exe, "--path", project_dir }
+    local function launch_debug(scene_path)
+      local args = { "--interpreter=vscode", "--", godot_exe, "--path", project_dir }
 
-    if opts.verbose then
-      table.insert(args, "--verbose")
-    end
-
-    if adapter_conf.args then
-      local extra = type(adapter_conf.args) == "table" and adapter_conf.args or { adapter_conf.args }
-      for _, arg in ipairs(extra) do
-        table.insert(args, arg)
+      if opts.verbose then
+        table.insert(args, "--verbose")
       end
+
+      if scene_path then
+        table.insert(args, scene_path)
+      end
+
+      if adapter_conf.args then
+        local extra = type(adapter_conf.args) == "table" and adapter_conf.args or { adapter_conf.args }
+        for _, arg in ipairs(extra) do
+          table.insert(args, arg)
+        end
+      end
+
+      cb({
+        type = "executable",
+        command = netcoredbg_path,
+        args = args,
+        options = { cwd = project_dir, env = adapter_conf.env },
+      })
     end
 
-    cb({
-      type = "executable",
-      command = netcoredbg_path,
-      args = args,
-      options = { cwd = project_dir, env = adapter_conf.env },
-    })
+    if adapter_conf.scene_picker then
+      local scenes = find_scenes(project_dir)
+      if #scenes == 0 then
+        vim.notify("No .tscn files found!", vim.log.levels.WARN)
+        launch_debug(nil)
+        return
+      end
+
+      vim.ui.select(scenes, {
+        prompt = "Select Scene to Launch:",
+        format_item = function(item)
+          return "🎬 " .. item
+        end,
+      }, function(choice)
+        if choice then
+          launch_debug(choice)
+        else
+          vim.notify("Debug cancelled", vim.log.levels.INFO)
+        end
+      end)
+    else
+      launch_debug(nil)
+    end
   end
 
   dap.configurations.cs = dap.configurations.cs or {}
@@ -102,12 +144,21 @@ function M.configure(opts)
   local configs = {
     {
       type = "godot",
-      name = "Godot: Launch Game",
+      name = "Godot: Select Scene to Launch",
+      request = "launch",
+      program = "",
+      preLaunchTask = "Godot Build",
+      scene_picker = true,
+    },
+    {
+      type = "godot",
+      name = "Godot: Launch Main Scene",
       request = "launch",
       program = "",
       preLaunchTask = "Godot Build",
     },
   }
+
   for _, cfg in ipairs(configs) do
     table.insert(dap.configurations.cs, 1, cfg)
   end
