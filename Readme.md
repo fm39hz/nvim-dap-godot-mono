@@ -11,11 +11,15 @@ This plugin automatically detects if you are in a Godot project. If detected, it
 - **Build Support**: Integrates with [overseer.nvim](https://github.com/stevearc/overseer.nvim) to automatically run `dotnet build` before debugging (reports errors in Quickfix).
 - **Environment Aware**: Respects your `GODOT` environment variable or looks for `godot` in your PATH.
 
+
+https://github.com/user-attachments/assets/9acb26ed-4338-4991-9312-a0350118537e
+
+
 ## ⚡ Requirements
 
 - Neovim \>= 0.9.0
 - [nvim-dap](https://github.com/mfussenegger/nvim-dap)
-- [overseer.nvim](https://github.com/stevearc/overseer.nvim) (Highly recommended for handling builds)
+- [overseer.nvim](https://github.com/stevearc/overseer.nvim) (Handling builds)
 - **netcoredbg**: You must have `netcoredbg` installed (via Mason or system package manager).
 - **Godot 4 (.NET version)**
 
