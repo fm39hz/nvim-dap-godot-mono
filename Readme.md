@@ -11,9 +11,7 @@ This plugin automatically detects if you are in a Godot project. If detected, it
 - **Build Support**: Integrates with [overseer.nvim](https://github.com/stevearc/overseer.nvim) to automatically run `dotnet build` before debugging (reports errors in Quickfix).
 - **Environment Aware**: Respects your `GODOT` environment variable or looks for `godot` in your PATH.
 
-
-https://github.com/user-attachments/assets/9acb26ed-4338-4991-9312-a0350118537e
-
+<https://github.com/user-attachments/assets/9acb26ed-4338-4991-9312-a0350118537e>
 
 ## ⚡ Requirements
 
@@ -22,17 +20,19 @@ https://github.com/user-attachments/assets/9acb26ed-4338-4991-9312-a0350118537e
 - [overseer.nvim](https://github.com/stevearc/overseer.nvim) (Handling builds)
 - **netcoredbg**: You must have `netcoredbg` installed (via Mason or system package manager).
 - **Godot 4 (.NET version)**
+- **.NET SDK**: Required to run `dotnet build`.
 
 ## 📦 Installation
 
 Using [lazy.nvim](https://github.com/folke/lazy.nvim):
 
 ```lua
-return {
+{
   "fm39hz/nvim-dap-godot-mono",
   dependencies = {
-    "mfussenegger/nvim-dap",
-    "stevearc/overseer.nvim",
+    "stevearc/overseer.nvim", -- Required for build tasks
+    -- Note: nvim-dap is NOT listed here to avoid loading it too early.
+    -- The plugin will load nvim-dap lazily when a C# file is opened.
   },
   ft = "cs",
   opts = {}
@@ -41,23 +41,31 @@ return {
 
 ## ⚙️ Configuration
 
-The plugin works out of the box for most setups. However, you can pass a configuration table to the `setup()` function.
+Here is the default setup configuration. You can customize it by passing your own options to the `opts`.
 
 **Default Configuration:**
 
 ```lua
-require("dap-godot-mono").setup({
-  -- Path to the Godot executable.
-  -- Defaults to the $GODOT environment variable, or "godot" if not set.
-  godot_executable = os.getenv("GODOT") or "godot",
+ {
+  "fm39hz/nvim-dap-godot-mono",
+  dependencies = {
+   "stevearc/overseer.nvim",
+  },
+  ft = "cs",
+  opts = {
+   -- Path to the Godot executable.
+   -- Defaults to the $GODOT environment variable, or "godot" if not set.
+   godot_executable = os.getenv("GODOT") or "godot",
 
-  -- Path to netcoredbg executable.
-  -- Defaults to looking it up in your PATH (works with Mason).
-  netcoredbg_path = vim.fn.exepath("netcoredbg"),
+   -- Path to netcoredbg executable.
+   -- Defaults to looking it up in your PATH (works with Mason).
+   -- Set to nil to let the plugin auto-detect.
+   netcoredbg_path = nil,
 
-  -- Whether to print extra debug info
-  verbose = false,
-})
+   -- Whether to print extra debug info
+   verbose = false,
+  },
+ },
 ```
 
 ### Options Explained

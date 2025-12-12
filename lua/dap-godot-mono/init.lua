@@ -2,106 +2,59 @@ local M = {}
 
 local default_opts = {
 	godot_executable = os.getenv("GODOT") or "godot",
-	netcoredbg_path = vim.fn.exepath("netcoredbg"),
+	netcoredbg_path = nil,
 	verbose = false,
 }
 
-local config = {}
-local project_cache = {}
+local loaded = false
+local user_opts = {}
 
-local function find_godot_project()
-	local current_dir = vim.fn.getcwd()
-
-	if project_cache[current_dir] then
-		return project_cache[current_dir].dir_path
-	end
-
-	local found_file = vim.fs.find("project.godot", {
-		path = current_dir,
+local function is_godot_project()
+	return vim.fs.find("project.godot", {
 		upward = true,
-		type = "file",
 		stop = vim.env.HOME,
-	})[1]
-
-	if found_file then
-		local project_dir = vim.fs.dirname(found_file)
-		project_cache[current_dir] = { dir_path = project_dir }
-		return project_dir
-	end
-
-	return nil
-end
-
-local function setup_overseer_task()
-	local has_overseer, overseer = pcall(require, "overseer")
-	if not has_overseer then
-		return
-	end
-
-	overseer.register_template({
-		name = "Godot Build",
-		builder = function()
-			local project_dir = find_godot_project() or vim.fn.getcwd()
-			return {
-				cmd = { "dotnet", "build" },
-				cwd = project_dir,
-				components = { "default", "on_output_quickfix" },
-			}
-		end,
-		condition = {
-			callback = function()
-				return find_godot_project() ~= nil
-			end,
-		},
-	})
+		path = vim.fn.getcwd(),
+	})[1] ~= nil
 end
 
 function M.setup(opts)
-	local project_dir = find_godot_project()
-	if not project_dir then
-		return
-	end
+	user_opts = vim.tbl_deep_extend("force", default_opts, opts or {})
 
-	config = vim.tbl_deep_extend("force", default_opts, opts or {})
-	local ok, dap = pcall(require, "dap")
-	if not ok then
-		return
-	end
-
-	setup_overseer_task()
-
-	dap.adapters.godot = function(cb, adapter_conf)
-		local args = { "--interpreter=vscode", "--", config.godot_executable, "--path", project_dir }
-
-		if config.verbose then
-			table.insert(args, "--verbose")
+	local function load_core()
+		if not is_godot_project() then
+			return
 		end
-		if adapter_conf.args then
-			local extra = type(adapter_conf.args) == "table" and adapter_conf.args or { adapter_conf.args }
-			for _, arg in ipairs(extra) do
-				table.insert(args, arg)
+
+		vim.schedule(function()
+			require("dap-godot-mono.core").configure(user_opts)
+			loaded = true
+		end)
+	end
+
+	if vim.bo.filetype == "cs" then
+		load_core()
+	end
+
+	local group = vim.api.nvim_create_augroup("DapGodot", { clear = true })
+
+	vim.api.nvim_create_autocmd("FileType", {
+		group = group,
+		pattern = "cs",
+		callback = load_core,
+	})
+
+	vim.api.nvim_create_autocmd("DirChanged", {
+		group = group,
+		callback = function()
+			if loaded then
+				vim.schedule(function()
+					require("dap-godot-mono.core").configure(user_opts)
+				end)
+			elseif is_godot_project() then
+				load_core()
 			end
-		end
-
-		cb({
-			type = "executable",
-			command = config.netcoredbg_path,
-			args = args,
-			options = { cwd = project_dir },
-		})
-	end
-
-	dap.configurations.cs = dap.configurations.cs or {}
-
-	local godot_config = {
-		type = "godot",
-		name = "Godot: Launch Game",
-		request = "launch",
-		program = "",
-		preLaunchTask = "Godot Build",
-	}
-
-	table.insert(dap.configurations.cs, 1, godot_config)
+		end,
+	})
 end
 
 return M
