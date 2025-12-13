@@ -4,6 +4,8 @@ local default_opts = {
 	godot_executable = os.getenv("GODOT") or "godot",
 	netcoredbg_path = nil,
 	verbose = false,
+	build_cmd = { "dotnet", "build" },
+	scene_exclude_patterns = { "/addons/", "/%.godot/" },
 }
 
 local loaded = false
@@ -46,9 +48,13 @@ function M.setup(opts)
 	vim.api.nvim_create_autocmd("DirChanged", {
 		group = group,
 		callback = function()
+			-- Clear caches when directory changes
+			local core = require("dap-godot-mono.core")
+			core.clear_caches()
+			
 			if loaded then
 				vim.schedule(function()
-					require("dap-godot-mono.core").configure(user_opts)
+					core.configure(user_opts)
 				end)
 			elseif is_godot_project() then
 				load_core()
