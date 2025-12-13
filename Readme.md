@@ -64,24 +64,37 @@ Here is the default setup configuration. You can customize it by passing your ow
 
    -- Whether to print extra debug info
    verbose = false,
+
+   -- Custom build command
+   -- Defaults to { "dotnet", "build" }
+   build_cmd = { "dotnet", "build" },
+
+   -- Scene exclusion patterns (Lua patterns)
+   -- Scenes matching these patterns will be excluded from the scene picker
+   -- Defaults to { "/addons/", "/%.godot/" }
+   scene_exclude_patterns = { "/addons/", "/%.godot/" },
   },
  },
 ```
 
 ### Options Explained
 
-| Option             | Type      | Description                                                                                                                                                             |
-| :----------------- | :-------- | :---------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `godot_executable` | `string`  | The command to launch Godot. If you have Godot in your PATH, leave this as `"godot"`. If you use a flatpak or a specific path, set it here (e.g., `"/usr/bin/godot4"`). |
-| `netcoredbg_path`  | `string`  | Path to the `netcoredbg` binary. If you installed it via Mason, `vim.fn.exepath("netcoredbg")` handles this automatically.                                              |
-| `verbose`          | `boolean` | If `true`, adds `--verbose` flag to Godot launch arguments for detailed logs.                                                                                           |
+| Option                    | Type      | Description                                                                                                                                                             |
+| :------------------------ | :-------- | :---------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `godot_executable`        | `string`  | The command to launch Godot. If you have Godot in your PATH, leave this as `"godot"`. If you use a flatpak or a specific path, set it here (e.g., `"/usr/bin/godot4"`). |
+| `netcoredbg_path`         | `string`  | Path to the `netcoredbg` binary. If you installed it via Mason, `vim.fn.exepath("netcoredbg")` handles this automatically.                                              |
+| `verbose`                 | `boolean` | If `true`, adds `--verbose` flag to Godot launch arguments for detailed logs.                                                                                           |
+| `build_cmd`               | `table`   | Custom build command as a table (e.g., `{ "dotnet", "build", "--configuration", "Debug" }`). Defaults to `{ "dotnet", "build" }`.                                       |
+| `scene_exclude_patterns`  | `table`   | List of Lua patterns to exclude scenes from the picker. Defaults to `{ "/addons/", "/%.godot/" }`. Add custom patterns like `"/test/"` to exclude test scenes.          |
 
 ## 🚀 Usage
 
 1. Open a C\# file (`.cs`) inside your Godot project.
 2. Set a breakpoint using `nvim-dap` (e.g., `:DapToggleBreakpoint`).
 3. Start debugging (e.g., `:DapContinue` or press F5).
-4. Select **"Godot: Launch Game"** from the menu (it will be the first option).
+4. Select one of the available options:
+   - **"Godot: Launch Main Scene"** - Launches the main scene defined in project settings
+   - **"Godot: Select Scene to Launch"** - Shows a picker to select which scene to launch
 5. The plugin will trigger a `dotnet build` via Overseer.
    - If build **fails**: The debugger won't start, and errors will be shown in the Quickfix list.
    - If build **succeeds**: Godot will launch, and the debugger will attach.
