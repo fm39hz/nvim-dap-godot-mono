@@ -11,7 +11,7 @@ The plugin detects Godot projects by locating a .sln file (solution) and then se
 - Integrates with overseer.nvim to run `dotnet build` before debugging
 - Honors `GODOT` environment variable or looks for `godot` in PATH
 
-<https://github.com/user-attachments/assets/9acb26ed-4338-4991-9312-a0350118537e>
+https://github.com/user-attachments/assets/6fba5158-17dc-4e82-b486-3899bde1cdee
 
 ## ⚡ Requirements
 
