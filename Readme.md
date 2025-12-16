@@ -1,15 +1,15 @@
 # nvim-dap-godot-mono
 
-A simple, "it just works" adapter to debug **Godot 4 (Mono/C\#)** projects using [nvim-dap](https://github.com/mfussenegger/nvim-dap) and [netcoredbg](https://github.com/Samsung/netcoredbg).
+A simple adapter to debug Godot 4 (Mono/C#) projects using nvim-dap and netcoredbg.
 
-This plugin automatically detects if you are in a Godot project. If detected, it registers the necessary DAP configurations to build and debug your game. If not, it stays silent and doesn't pollute your standard .NET debugger list.
+The plugin detects Godot projects by locating a .sln file (solution) and then searching downward from the solution directory for a `project.godot` file. Detection options include `ignored_dirs` to skip heavy folders and `scan_depth` to control how deep the downward scan runs.
 
-## ✨ Features
+## Features
 
-- **Auto-detection**: Only activates when a `project.godot` file is found.
-- **Seamless Integration**: Injects "Godot: Launch Main Scene" & "Godot: Select Scene to Launch" directly into `dap.configurations.cs`.
-- **Build Support**: Integrates with [overseer.nvim](https://github.com/stevearc/overseer.nvim) to automatically run `dotnet build` before debugging (reports errors in Quickfix).
-- **Environment Aware**: Respects your `GODOT` environment variable or looks for `godot` in your PATH.
+- Auto-detection based on .sln -> project.godot
+- Injects Godot DAP configurations into `dap.configurations.cs`
+- Integrates with overseer.nvim to run `dotnet build` before debugging
+- Honors `GODOT` environment variable or looks for `godot` in PATH
 
 <https://github.com/user-attachments/assets/9acb26ed-4338-4991-9312-a0350118537e>
 
@@ -53,39 +53,52 @@ Here is the default setup configuration. You can customize it by passing your ow
   },
   ft = "cs",
   opts = {
-   -- Path to the Godot executable.
-   -- Defaults to the $GODOT environment variable, or "godot" if not set.
-   godot_executable = os.getenv("GODOT") or "godot",
+    -- Godot-specific configuration grouped under `godot`.
+    godot = {
+      -- Path to the Godot executable.
+      -- Defaults to the $GODOT environment variable, or "godot" if not set.
+      godot_executable = os.getenv("GODOT") or "godot",
 
-   -- Path to netcoredbg executable.
-   -- Defaults to looking it up in your PATH (works with Mason).
-   -- Set to nil to let the plugin auto-detect.
-   netcoredbg_path = nil,
+      -- Path to netcoredbg executable.
+      -- Defaults to looking it up in your PATH (works with Mason).
+      -- Set to nil to let the plugin auto-detect.
+      netcoredbg_path = nil,
 
-   -- Whether to print extra debug info
-   verbose = false,
+      -- Whether to print extra debug info
+      verbose = false,
 
-   -- Custom build command
-   -- Defaults to { "dotnet", "build" }
-   build_cmd = { "dotnet", "build" },
+      -- Custom build command
+      -- Defaults to { "dotnet", "build" }
+      build_cmd = { "dotnet", "build" },
 
-   -- Scene exclusion patterns (Lua patterns)
-   -- Scenes matching these patterns will be excluded from the scene picker
-   -- Defaults to { "/addons/", "/%.godot/" }
-   scene_exclude_patterns = { "/addons/", "/%.godot/" },
+      -- How deep to scan from the solution directory for project.godot
+      -- Defaults to 2. Set to 0 to only check the solution directory.
+      scan_depth = 2,
+
+      -- Scene exclusion patterns (Lua patterns)
+      -- Scenes matching these patterns will be excluded from the scene picker
+      -- Defaults to { "/addons/", "/%.godot/" }
+      scene_exclude_patterns = { "/addons/", "/%.godot/" },
+    },
+
+    -- Backwards compatibility: old top-level keys are still accepted but
+    -- nesting them under `godot` is preferred and will be required in a
+    -- future release. If you still use top-level keys they will be migrated
+    -- with a deprecation warning.
   },
  },
 ```
 
 ### Options Explained
 
-| Option                    | Type      | Description                                                                                                                                                             |
-| :------------------------ | :-------- | :---------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `godot_executable`        | `string`  | The command to launch Godot. If you have Godot in your PATH, leave this as `"godot"`. If you use a flatpak or a specific path, set it here (e.g., `"/usr/bin/godot4"`). |
-| `netcoredbg_path`         | `string`  | Path to the `netcoredbg` binary. If you installed it via Mason, `vim.fn.exepath("netcoredbg")` handles this automatically.                                              |
-| `verbose`                 | `boolean` | If `true`, adds `--verbose` flag to Godot launch arguments for detailed logs.                                                                                           |
-| `build_cmd`               | `table`   | Custom build command as a table (e.g., `{ "dotnet", "build", "--configuration", "Debug" }`). Defaults to `{ "dotnet", "build" }`.                                       |
-| `scene_exclude_patterns`  | `table`   | List of Lua patterns to exclude scenes from the picker. Defaults to `{ "/addons/", "/%.godot/" }`. Add custom patterns like `"/test/"` to exclude test scenes.          |
+| Option                   | Type      | Description                                                                                                                                                             |
+| :----------------------- | :-------- | :---------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `godot_executable`       | `string`  | The command to launch Godot. If you have Godot in your PATH, leave this as `"godot"`. If you use a flatpak or a specific path, set it here (e.g., `"/usr/bin/godot4"`). |
+| `netcoredbg_path`        | `string`  | Path to the `netcoredbg` binary. If you installed it via Mason, `vim.fn.exepath("netcoredbg")` handles this automatically.                                              |
+| `verbose`                | `boolean` | If `true`, adds `--verbose` flag to Godot launch arguments for detailed logs.                                                                                           |
+| `build_cmd`              | `table`   | Custom build command as a table (e.g., `{ "dotnet", "build", "--configuration", "Debug" }`). Defaults to `{ "dotnet", "build" }`.                                       |
+| `scan_depth`         | `number`  | How deep to scan downward from the solution directory for `project.godot`. Defaults to `2`. Set to `0` to only check the solution directory, or higher to recurse more. `sln_scan_depth` is accepted for compatibility. |
+| `scene_exclude_patterns` | `table`   | List of Lua patterns to exclude scenes from the picker. Defaults to `{ "/addons/", "/%.godot/" }`. Add custom patterns like `"/test/"` to exclude test scenes.          |
 
 ## 🚀 Usage
 
