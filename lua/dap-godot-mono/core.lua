@@ -3,11 +3,11 @@ local M = {}
 local project_cache = {}
 local scene_cache = {}
 local plugin_configs_registered = false
+local overseer_template_registered = false
 
 local function clear_caches()
   project_cache = {}
   scene_cache = {}
-  plugin_configs_registered = false
 end
 
 M.clear_caches = clear_caches
@@ -206,6 +206,10 @@ local function setup_overseer_task(build_cmd)
   if not has_overseer then
     return
   end
+  -- avoid registering the same template multiple times
+  if overseer_template_registered then
+    return
+  end
   overseer.register_template({
     name = "Godot Build",
     builder = function()
@@ -222,6 +226,7 @@ local function setup_overseer_task(build_cmd)
       end,
     },
   })
+  overseer_template_registered = true
 end
 
 local function get_godot_executable(adapter_conf, opts)
